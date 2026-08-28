@@ -44,6 +44,15 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
+        #meme-container.fullscreen #meme-video {
+            width: 100%;
+            height: 100%;
+            max-width: 100vw;
+            max-height: 100vh;
+            object-fit: cover;
+            border-radius: 0;
+        }
+
         /* Alerta de Agradecimento da Galeria */
         #gallery-alert {
             position: absolute;
@@ -83,24 +92,19 @@
             font-weight: bold;
         }
 
-        /* Carrossel Ajustado para o Painel Superior (Webcam) */
+        /* Carrossel da Galeria de Presentes */
         #gallery-carousel {
             position: absolute;
-            top: 25px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            width: 85vw;
-            max-width: 750px;
-            background: rgba(10, 10, 20, 0.85);
-            padding: 15px 25px;
-            border-radius: 16px;
-            backdrop-filter: blur(8px);
-            border: 2px solid #00f2fe;
-            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+            gap: 15px;
+            background: rgba(15, 15, 20, 0.8);
+            padding: 12px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 80;
         }
 
@@ -108,36 +112,32 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             position: relative;
             transition: transform 0.3s ease, filter 0.3s ease;
-            filter: grayscale(100%) opacity(0.4);
-            padding: 5px;
+            filter: grayscale(100%) opacity(0.5);
         }
 
         .gallery-item.active {
             filter: grayscale(0%) opacity(1);
-            transform: scale(1.15);
+            transform: scale(1.1);
         }
 
         .gallery-item img {
-            width: 75px; 
-            height: 75px;
+            width: 50px;
+            height: 50px;
             object-fit: contain;
         }
 
         .gallery-item .badge {
             position: absolute;
-            top: -8px;
-            right: -8px;
+            top: -5px;
+            right: -5px;
             background: #ff0050;
             color: #fff;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
-            padding: 3px 8px;
-            border-radius: 12px;
-            border: 1px solid #fff;
-            box-shadow: 0 0 8px rgba(255, 0, 80, 0.8);
+            padding: 2px 6px;
+            border-radius: 10px;
         }
 
         @keyframes popup {
@@ -160,7 +160,7 @@
         <p id="alert-user">Obrigado!</p>
     </div>
 
-    <!-- Carrossel de Presentes (Painel Superior) -->
+    <!-- Carrossel de Presentes -->
     <div id="gallery-carousel"></div>
 
     <!-- Áudio do Alerta -->
@@ -168,7 +168,7 @@
 
     <script>
         const CONFIG = {
-            // Regras dos Memes com os IDs exatos
+            // Regras dos Memes com os IDs exatos fornecidos
             memeRules: [
                 { ids: ["5879"], keywords: ["rosquinha", "donut"], video: "sebastian.mp4", fullscreen: false },
                 { ids: ["5487"], keywords: ["maos fazendo coracao"], video: "menino_de_pau.mp4", fullscreen: false },
@@ -183,17 +183,11 @@
                 { ids: ["5655"], keywords: ["rosa"], video: "rosa.mp4", fullscreen: false }
             ],
 
-            // Carrossel da Galeria (Progresso Inicial 5/9)
+            // Carrossel de Galeria
             galleryGifts: [
-                { key: "chapeu_bigode", name: "Chapéu e Bigode", image: "chapeu_bigode.png", max: 1, initialCount: 1, ids: ["6427"], keywords: ["chapeu e bigode"] },
-                { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, initialCount: 2, ids: ["5879"], keywords: ["rosquinha", "donut"] },
-                { key: "maos_fazendo_coracao", name: "Mãos fazendo coração", image: "mãos_fazendo_coração.png", max: 4, initialCount: 4, ids: ["5487"], keywords: ["maos fazendo coracao"] },
-                { key: "rosa", name: "Rosa", image: "rosa.png", max: 1, initialCount: 1, ids: ["5655"], keywords: ["rosa"] },
-                { key: "maos_em_coracao", name: "Mãos em coração", image: "maos_em_coracao.png", max: 1, initialCount: 1, ids: ["5660"], keywords: ["maos em coracao"] },
-                { key: "coracoes", name: "Corações", image: "coracoes.png", max: 1, initialCount: 0, ids: ["5586"], keywords: ["coracoes"] },
-                { key: "corgi", name: "Corgi", image: "corgi.png", max: 1, initialCount: 0, ids: ["6267"], keywords: ["corgi"] },
-                { key: "pistola_dinheiro", name: "Pistola de dinheiro", image: "pistola.png", max: 1, initialCount: 0, ids: ["7168"], keywords: ["pistola de dinheiro"] },
-                { key: "cisne", name: "Cisne", image: "cisne.png", max: 1, initialCount: 0, ids: ["5897"], keywords: ["cisne"] }
+                { key: "maos_coracao_4", name: "Mãos fazendo coração", image: "mãos_fazendo_coração.png", max: 4, ids: ["5487"], keywords: ["maos fazendo coracao"] },
+                { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, ids: ["5879"], keywords: ["rosquinha", "donut"] },
+                { key: "chapeu_bigode", name: "Chapéu e Bigode", image: "chapeu_bigode.png", max: 1, ids: ["6427"], keywords: ["chapeu e bigode"] }
             ]
         };
 
@@ -203,32 +197,34 @@
             isProcessing: false
         };
 
+        // Função para remover acentos e padronizar textos
         function normalizeText(text) {
             if (!text) return "";
             return text.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
+        // Renderiza a galeria na tela
         function initGallery() {
             const carousel = document.getElementById('gallery-carousel');
             carousel.innerHTML = '';
 
             CONFIG.galleryGifts.forEach(gift => {
-                const currentCount = gift.initialCount || 0;
-                state.galleryCounts[gift.key] = currentCount;
+                state.galleryCounts[gift.key] = 0;
 
                 const itemDiv = document.createElement('div');
-                itemDiv.className = `gallery-item ${currentCount > 0 ? 'active' : ''}`;
+                itemDiv.className = 'gallery-item';
                 itemDiv.id = `gallery-item-${gift.key}`;
 
                 itemDiv.innerHTML = `
                     <img src="${gift.image}" alt="${gift.name}">
-                    <span class="badge" id="badge-${gift.key}">${currentCount}/${gift.max}</span>
+                    <span class="badge" id="badge-${gift.key}">0/${gift.max}</span>
                 `;
 
                 carousel.appendChild(itemDiv);
             });
         }
 
+        // Processa os presentes recebidos (Simulados ou do Streamer.bot)
         function onGiftReceived(giftData) {
             console.log("[Presente Recebido]", giftData);
             state.eventQueue.push(giftData);
@@ -245,7 +241,7 @@
             const count = Number(gift.repeatCount || gift.count || 1);
             const user = gift.nickname || gift.uniqueId || "Fã";
 
-            // 1. Meme
+            // 1. Checa e ativa Meme
             const matchedMeme = CONFIG.memeRules.find(rule => 
                 (giftId && rule.ids.includes(giftId)) || 
                 rule.keywords.some(kw => giftName.includes(normalizeText(kw)))
@@ -255,7 +251,7 @@
                 await playMeme(matchedMeme.video, matchedMeme.fullscreen);
             }
 
-            // 2. Galeria
+            // 2. Checa e atualiza Galeria
             const matchedGallery = CONFIG.galleryGifts.find(g => 
                 (giftId && g.ids.includes(giftId)) || 
                 g.keywords.some(kw => giftName.includes(normalizeText(kw)))
@@ -266,12 +262,14 @@
                 const updated = Math.min(current + count, matchedGallery.max);
                 state.galleryCounts[matchedGallery.key] = updated;
 
+                // Atualiza visual do carrossel
                 const badge = document.getElementById(`badge-${matchedGallery.key}`);
                 const item = document.getElementById(`gallery-item-${matchedGallery.key}`);
                 
                 if (badge) badge.innerText = `${updated}/${matchedGallery.max}`;
                 if (item && updated > 0) item.classList.add('active');
 
+                // Dispara alerta se subiu a contagem
                 if (updated > current) {
                     await triggerGalleryAlert(matchedGallery, user);
                 }
@@ -281,6 +279,7 @@
             processQueue();
         }
 
+        // Toca o vídeo do meme
         function playMeme(videoSrc, isFullscreen) {
             return new Promise((resolve) => {
                 const container = document.getElementById('meme-container');
@@ -300,6 +299,7 @@
             });
         }
 
+        // Toca o som alert.mp3 e mostra o card de agradecimento
         function triggerGalleryAlert(galleryGift, username) {
             return new Promise((resolve) => {
                 const alertBox = document.getElementById('gallery-alert');
@@ -324,8 +324,9 @@
             });
         }
 
+        // Conexão com Streamer.bot / WebSocket TikTok
         function setupWebSocket() {
-            const ws = new WebSocket("ws://localhost:8080/");
+            const ws = new WebSocket("ws://localhost:8080/"); // Porta padrão do Streamer.bot
 
             ws.onmessage = (event) => {
                 try {
@@ -334,7 +335,7 @@
                         onGiftReceived(data.data);
                     }
                 } catch (e) {
-                    // Trata mensagens que não são JSON
+                    // Trata mensagens que não são JSON puro
                 }
             };
 
@@ -342,6 +343,7 @@
             ws.onerror = (err) => console.error("Erro no WebSocket:", err);
         }
 
+        // Inicialização
         window.onload = () => {
             initGallery();
             setupWebSocket();
