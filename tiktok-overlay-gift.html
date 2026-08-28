@@ -318,7 +318,7 @@ const CONFIG = {
         { name: "Eu Vim Ver o Mamaco", image: "heart_me.png" },
         { name: "Sebastian", image: "rosquinha.png" },
         { name: "Susto", image: "chapéu_e_bigode.png" },
-        { name: "Gato Assustador", image: "Gato_assustador.png" }
+        { name: "Gato Assustador", image: "gato_assustador.png" }
     ],
 
     memeRules: [
@@ -438,10 +438,10 @@ async function processQueue() {
 
     try {
         if (item.type === "gallery_alert") {
-            // ALERTA DE GALERIA ILUMINADA (Sobrepõe memes)
             alertImg.src = item.image;
             alertPop.style.display = "flex";
 
+            audioAlert.volume = 1.0;
             audioAlert.currentTime = 0;
             await audioAlert.play();
 
@@ -454,6 +454,7 @@ async function processQueue() {
 
             video.pause();
             video.currentTime = 0;
+            video.volume = 1.0;
             video.src = item.file;
             video.style.display = "block";
 
@@ -476,6 +477,7 @@ async function processQueue() {
             overlay.classList.remove("fullscreen");
 
         } else if (item.type === "audio") {
+            audioDefault.volume = 1.0;
             audioDefault.currentTime = 0;
             await audioDefault.play();
             await new Promise(r => setTimeout(r, 1500));
@@ -519,7 +521,6 @@ function handleStreamerbotAction(data) {
             localStorage.setItem(storageKey, JSON.stringify(galleryProgress));
             renderGalleryCarousel();
 
-            // VERIFICA SE A GALERIA ACABOU DE SER ILUMINADA COM ESSE PRESENTE
             if (newQty >= targetGalleryItem.max) {
                 galleryJustUnlocked = true;
                 queue.push({
@@ -531,7 +532,6 @@ function handleStreamerbotAction(data) {
         }
     }
 
-    // SE A GALERIA ACABOU DE SER ILUMINADA: Anula o meme correspondente e executa só o alerta!
     if (galleryJustUnlocked) {
         processQueue();
         return;
@@ -559,7 +559,6 @@ function handleStreamerbotAction(data) {
         return;
     }
 
-    // Som padrão para outros presentes
     queue.push({ type: "audio", file: CONFIG.defaultAudioFile });
     processQueue();
 }
