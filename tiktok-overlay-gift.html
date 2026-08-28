@@ -226,7 +226,6 @@
         object-fit: cover;
     }
 
-    /* Pop-up de Agradecimento da Galeria */
     #alert-pop {
         display: none;
         flex-direction: column;
@@ -275,7 +274,6 @@
 
 <body>
 
-<!-- Carrossel de Memes -->
 <div id="meme-carousel-container">
     <div class="title">✨ PRESENTES X MEMES ✨</div>
     <div class="carousel-wrapper">
@@ -283,7 +281,6 @@
     </div>
 </div>
 
-<!-- Carrossel da Galeria -->
 <div id="gallery-carousel-container">
     <div class="title-gallery">✨ LIGHT UP MY GALLERY ✨</div>
     <div class="carousel-wrapper">
@@ -291,7 +288,6 @@
     </div>
 </div>
 
-<!-- Área da Tela de Jogo (Vídeos e Alerta) -->
 <div id="overlay">
     <video id="video" playsinline preload="auto"></video>
     <div id="alert-pop">
@@ -323,21 +319,21 @@ const CONFIG = {
 
     memeRules: [
         { keywords: ["heart me", "heart_me", "7934"], video: "mamaco.mp4", fullscreen: false },
-        { keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "6427"], video: "susto.mp4", fullscreen: false },
+        { keywords: ["chapeu e bigode", "chapeu", "bigode", "6427"], video: "susto.mp4", fullscreen: false },
         { keywords: ["rosquinha", "donut", "5879"], video: "sebastian.mp4", fullscreen: false },
-        { keywords: ["mãos fazendo coração", "maos fazendo coracao", "5487"], video: "menino_de_pau.mp4", fullscreen: false },
+        { keywords: ["maos fazendo coracao", "maos fazendo", "fazendo coracao", "hand hearts", "hand_hearts", "5487"], video: "menino_de_pau.mp4", fullscreen: false },
         { keywords: ["gato assustador", "gato", "12631"], video: "gato.mp4", fullscreen: true }
     ],
 
     galleryGifts: [
         { key: "rosa", name: "Rosa", image: "rosa.png", max: 10, keywords: ["rosa", "rose", "5655"] },
-        { key: "maos_coracao_4", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao", "5487"] },
+        { key: "maos_coracao_4", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["maos fazendo coracao", "maos fazendo", "fazendo coracao", "hand hearts", "hand_hearts", "5487"] },
         { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut", "5879"] },
-        { key: "chapeu", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "6427"] },
-        { key: "maos_coracao_1", name: "Mãos em coração", image: "mãos_em_coração.png", max: 1, keywords: ["mãos em coração", "maos em coracao"] },
-        { key: "coracoes", name: "Corações", image: "corações.png", max: 1, keywords: ["corações", "coracoes", "hearts"] },
+        { key: "chapeu", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapeu e bigode", "chapeu", "bigode", "6427"] },
+        { key: "maos_coracao_1", name: "Mãos em coração", image: "mãos_em_coração.png", max: 1, keywords: ["maos em coracao", "finger heart"] },
+        { key: "coracoes", name: "Corações", image: "corações.png", max: 1, keywords: ["coracoes", "hearts"] },
         { key: "corgi", name: "Corgi", image: "corgi.png", max: 1, keywords: ["corgi"] },
-        { key: "pistola", name: "Pistola de dinheiro", image: "pistola_de_dinheiro.png", max: 1, keywords: ["pistola de dinheiro", "pistola"] },
+        { key: "pistola", name: "Pistola de dinheiro", image: "pistola_de_dinheiro.png", max: 1, keywords: ["pistola de dinheiro", "pistola", "money gun"] },
         { key: "cisne", name: "Cisne", image: "cisne.png", max: 1, keywords: ["cisne", "swan"] }
     ],
 
@@ -358,6 +354,15 @@ const status = document.getElementById("status");
 
 let playing = false;
 let queue = [];
+
+// Função para remover acentos e deixar em minúsculo
+function normalizeText(str) {
+    return String(str || '')
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+}
 
 function getLastMonday() {
     const d = new Date();
@@ -500,15 +505,15 @@ function handleStreamerbotAction(data) {
     if (actionName !== CONFIG.actionName) return;
 
     const args = data.arguments || {};
-    const giftInput = String(args.giftName || args.gift_name || args.giftId || "").toLowerCase().trim();
-    
-    // Pega a quantidade do combo enviada (padrão é 1 se não vier informado)
+    const rawGiftInput = String(args.giftName || args.gift_name || args.giftId || "");
+    const giftInput = normalizeText(rawGiftInput);
+
     const rawRepeat = args.repeatCount || args.repeat_count || args.count || 1;
     const repeatCount = Math.max(1, parseInt(rawRepeat) || 1);
 
     // --- 1. ATUALIZA A GALERIA ---
     const targetGalleryItem = CONFIG.galleryGifts.find(g => 
-        g.keywords.some(kw => giftInput.includes(kw))
+        g.keywords.some(kw => giftInput.includes(normalizeText(kw)))
     );
 
     if (targetGalleryItem) {
@@ -522,7 +527,6 @@ function handleStreamerbotAction(data) {
             localStorage.setItem(storageKey, JSON.stringify(galleryProgress));
             renderGalleryCarousel();
 
-            // Se atingiu a meta com este combo, solta o alerta de galeria completa
             if (newQty >= targetGalleryItem.max) {
                 queue.push({
                     type: "gallery_alert",
@@ -533,14 +537,12 @@ function handleStreamerbotAction(data) {
         }
     }
 
-    // --- 2. EXECUTA OS MEMES NA LIVE (ENFILEIRA DE ACORDO COM O COMBO) ---
-    const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(kw));
+    // --- 2. EXECUTA OS MEMES NA LIVE ---
+    const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(normalizeText(kw)));
     if (isRose) {
         if (repeatCount >= 10) {
-            // Se o combo de rosas foi >= 10 de uma vez, toca o Yamete
             queue.push({ type: "video", file: CONFIG.yameteFile, fullscreen: false });
         } else {
-            // Senão, toca o Plankton a quantidade de vezes que a pessoa mandou a rosa no combo
             for (let i = 0; i < repeatCount; i++) {
                 queue.push({ type: "video", file: CONFIG.planktonFile, fullscreen: false });
             }
@@ -550,7 +552,7 @@ function handleStreamerbotAction(data) {
     }
 
     const matchedMeme = CONFIG.memeRules.find(rule => 
-        rule.keywords.some(kw => giftInput.includes(kw))
+        rule.keywords.some(kw => giftInput.includes(normalizeText(kw)))
     );
 
     if (matchedMeme) {
