@@ -330,10 +330,10 @@ const CONFIG = {
     ],
 
     galleryGifts: [
-        { key: "rosa", name: "Rosa", image: "rosa.png", max: 10, keywords: ["rosa", "rose"] },
-        { key: "maos_coracao_4", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao"] },
-        { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut"] },
-        { key: "chapeu", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode"] },
+        { key: "rosa", name: "Rosa", image: "rosa.png", max: 10, keywords: ["rosa", "rose", "5655"] },
+        { key: "maos_coracao_4", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao", "5487"] },
+        { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut", "5879"] },
+        { key: "chapeu", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "6427"] },
         { key: "maos_coracao_1", name: "Mãos em coração", image: "mãos_em_coração.png", max: 1, keywords: ["mãos em coração", "maos em coracao"] },
         { key: "coracoes", name: "Corações", image: "corações.png", max: 1, keywords: ["corações", "coracoes", "hearts"] },
         { key: "corgi", name: "Corgi", image: "corgi.png", max: 1, keywords: ["corgi"] },
@@ -501,14 +501,15 @@ function handleStreamerbotAction(data) {
 
     const args = data.arguments || {};
     const giftInput = String(args.giftName || args.gift_name || args.giftId || "").toLowerCase().trim();
-    const repeatCount = Number(args.repeatCount || args.repeat_count || 1);
+    
+    // Pega a quantidade do combo enviada (padrão é 1 se não vier informado)
+    const rawRepeat = args.repeatCount || args.repeat_count || args.count || 1;
+    const repeatCount = Math.max(1, parseInt(rawRepeat) || 1);
 
-    // --- LÓGICA DA GALERIA ---
+    // --- 1. ATUALIZA A GALERIA ---
     const targetGalleryItem = CONFIG.galleryGifts.find(g => 
         g.keywords.some(kw => giftInput.includes(kw))
     );
-
-    let galleryJustUnlocked = false;
 
     if (targetGalleryItem) {
         const storageKey = "gallery_progress_data";
@@ -521,8 +522,8 @@ function handleStreamerbotAction(data) {
             localStorage.setItem(storageKey, JSON.stringify(galleryProgress));
             renderGalleryCarousel();
 
+            // Se atingiu a meta com este combo, solta o alerta de galeria completa
             if (newQty >= targetGalleryItem.max) {
-                galleryJustUnlocked = true;
                 queue.push({
                     type: "gallery_alert",
                     image: targetGalleryItem.image,
@@ -532,18 +533,17 @@ function handleStreamerbotAction(data) {
         }
     }
 
-    if (galleryJustUnlocked) {
-        processQueue();
-        return;
-    }
-
-    // --- LÓGICA DOS MEMES DA LIVE ---
+    // --- 2. EXECUTA OS MEMES NA LIVE (ENFILEIRA DE ACORDO COM O COMBO) ---
     const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(kw));
     if (isRose) {
         if (repeatCount >= 10) {
+            // Se o combo de rosas foi >= 10 de uma vez, toca o Yamete
             queue.push({ type: "video", file: CONFIG.yameteFile, fullscreen: false });
         } else {
-            queue.push({ type: "video", file: CONFIG.planktonFile, fullscreen: false });
+            // Senão, toca o Plankton a quantidade de vezes que a pessoa mandou a rosa no combo
+            for (let i = 0; i < repeatCount; i++) {
+                queue.push({ type: "video", file: CONFIG.planktonFile, fullscreen: false });
+            }
         }
         processQueue();
         return;
@@ -554,12 +554,17 @@ function handleStreamerbotAction(data) {
     );
 
     if (matchedMeme) {
-        queue.push({ type: "video", file: matchedMeme.video, fullscreen: matchedMeme.fullscreen });
+        for (let i = 0; i < repeatCount; i++) {
+            queue.push({ type: "video", file: matchedMeme.video, fullscreen: matchedMeme.fullscreen });
+        }
         processQueue();
         return;
     }
 
-    queue.push({ type: "audio", file: CONFIG.defaultAudioFile });
+    // Áudio padrão
+    for (let i = 0; i < repeatCount; i++) {
+        queue.push({ type: "audio", file: CONFIG.defaultAudioFile });
+    }
     processQueue();
 }
 
