@@ -183,12 +183,18 @@
                 { ids: ["5655"], keywords: ["rosa"], video: "rosa.mp4", fullscreen: false }
             ],
 
-            // Carrossel de Galeria
-            galleryGifts: [
-                { key: "maos_coracao_4", name: "Mãos fazendo coração", image: "mãos_fazendo_coração.png", max: 4, ids: ["5487"], keywords: ["maos fazendo coracao"] },
-                { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, ids: ["5879"], keywords: ["rosquinha", "donut"] },
-                { key: "chapeu_bigode", name: "Chapéu e Bigode", image: "chapeu_bigode.png", max: 1, ids: ["6427"], keywords: ["chapeu e bigode"] }
-            ]
+          // Carrossel completo com o estado atual da sua Galeria (5/9 iluminados)
+galleryGifts: [
+    { key: "chapeu_bigode", name: "Chapéu e Bigode", image: "chapeu_bigode.png", max: 1, initialCount: 1, ids: ["6427"], keywords: ["chapeu e bigode"] },
+    { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, initialCount: 2, ids: ["5879"], keywords: ["rosquinha", "donut"] },
+    { key: "maos_fazendo_coracao", name: "Mãos fazendo coração", image: "mãos_fazendo_coração.png", max: 4, initialCount: 4, ids: ["5487"], keywords: ["maos fazendo coracao"] },
+    { key: "rosa", name: "Rosa", image: "rosa.png", max: 1, initialCount: 1, ids: ["5655"], keywords: ["rosa"] },
+    { key: "maos_em_coracao", name: "Mãos em coração", image: "maos_em_coracao.png", max: 1, initialCount: 1, ids: ["5660"], keywords: ["maos em coracao"] },
+    { key: "coracoes", name: "Corações", image: "coracoes.png", max: 1, initialCount: 0, ids: ["5586"], keywords: ["coracoes"] },
+    { key: "corgi", name: "Corgi", image: "corgi.png", max: 1, initialCount: 0, ids: ["6267"], keywords: ["corgi"] },
+    { key: "pistola_dinheiro", name: "Pistola de dinheiro", image: "pistola.png", max: 1, initialCount: 0, ids: ["7168"], keywords: ["pistola de dinheiro"] },
+    { key: "cisne", name: "Cisne", image: "cisne.png", max: 1, initialCount: 0, ids: ["5897"], keywords: ["cisne"] }
+]
         };
 
         const state = {
@@ -204,25 +210,27 @@
         }
 
         // Renderiza a galeria na tela
-        function initGallery() {
-            const carousel = document.getElementById('gallery-carousel');
-            carousel.innerHTML = '';
+      function initGallery() {
+    const carousel = document.getElementById('gallery-carousel');
+    carousel.innerHTML = '';
 
-            CONFIG.galleryGifts.forEach(gift => {
-                state.galleryCounts[gift.key] = 0;
+    CONFIG.galleryGifts.forEach(gift => {
+        // Define a contagem inicial (1 ou 0) com base no estado atual da live
+        const currentCount = gift.initialCount || 0;
+        state.galleryCounts[gift.key] = currentCount;
 
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'gallery-item';
-                itemDiv.id = `gallery-item-${gift.key}`;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = `gallery-item ${currentCount > 0 ? 'active' : ''}`;
+        itemDiv.id = `gallery-item-${gift.key}`;
 
-                itemDiv.innerHTML = `
-                    <img src="${gift.image}" alt="${gift.name}">
-                    <span class="badge" id="badge-${gift.key}">0/${gift.max}</span>
-                `;
+        itemDiv.innerHTML = `
+            <img src="${gift.image}" alt="${gift.name}">
+            <span class="badge" id="badge-${gift.key}">${currentCount}/${gift.max}</span>
+        `;
 
-                carousel.appendChild(itemDiv);
-            });
-        }
+        carousel.appendChild(itemDiv);
+    });
+}
 
         // Processa os presentes recebidos (Simulados ou do Streamer.bot)
         function onGiftReceived(giftData) {
