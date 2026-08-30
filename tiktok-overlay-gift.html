@@ -316,13 +316,8 @@
 
 <div id="status">🔄 Conectando ao Streamer.bot...</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@streamerbot/client/dist/streamerbot-client.js"></script>
-
 <script>
 const CONFIG = {
-    // Aceita qualquer action contendo essas palavras no nome
-    acceptedActions: ["PRESENTES", "TIKTOK_MASTER", "FOLLOW"],
-
     memeList: [
         { name: "Plankton Bolado", image: "rosa.png" },
         { name: "Yamete Kudasai", image: "rosa.png", combo: "x10" },
@@ -374,6 +369,7 @@ const status = document.getElementById("status");
 
 let playing = false;
 let queue = [];
+let ws;
 
 function renderMemeCarousel() {
     const track = document.getElementById("meme-track");
@@ -526,26 +522,25 @@ async function processQueue() {
     processQueue();
 }
 
-function processarFollowEvent() {
-    enqueueItem({ type: "video", file: CONFIG.followVideoFile, fullscreen: false });
-}
+function processarEventoWebSocket(raw) {
+    let args = raw.data?.arguments || raw.data || raw.arguments || raw.payload || raw;
+    
+    if (raw.event && raw.event.properties) {
+        args = { ...raw.event.properties, ...args };
+    }
 
-function handleStreamerbotAction(data, rawEvent) {
-    // 1. Checa se o nome da Action contem "follow"
-    const actionName = String(data?.name || data?.actionName || "").toLowerCase();
-    const eventType = String(rawEvent?.event?.type || rawEvent?.event || "").toLowerCase();
-
-    if (actionName.includes("follow") || eventType.includes("follow")) {
-        processarFollowEvent();
+    const eventType = String(raw.event?.type || raw.event || args.eventType || '').toLowerCase();
+    const actionName = String(args.action || raw.data?.name || raw.data?.actionName || '').toLowerCase();
+    
+    // DETECÇÃO DE FOLLOW: Funciona tanto via Evento Nativo do TikTok quanto por Action no Streamer.bot
+    if (eventType.includes('follow') || actionName.includes('follow')) {
+        enqueueItem({ type: "video", file: CONFIG.followVideoFile, fullscreen: false });
         return;
     }
 
-    if (!data) return;
-
-    // 2. Processa os presentes
-    const args = data.arguments || data;
+    // PROCESSAMENTO DE PRESENTES
     const giftInput = String(args.giftName || args.gift_name || args.giftId || "").toLowerCase().trim();
-    const repeatCount = Number(args.repeatCount || args.repeat_count || 1);
+    const repeatCount = Number(args.repeatCount || args.repeat_count || args.coins || 1);
 
     if (giftInput) {
         const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(kw));
@@ -590,39 +585,54 @@ function handleStreamerbotAction(data, rawEvent) {
     }
 }
 
-function connectStreamerbot() {
-    try {
-        setStatus("🔄 Conectando ao Streamer.bot...");
-        window.streamerbotClient = new StreamerbotClient({
-            host: "127.0.0.1",
-            port: 8080,
-            endpoint: "/"
-        });
+function conectarWebSocketNativo() {
+    setStatus("🔄 Conectando ao Streamer.bot...");
 
-        window.streamerbotClient.on("TikTok.Follow", () => {
-            processarFollowEvent();
-        });
+    ws = new WebSocket("ws://127.0.0.1:8080/");
 
-        window.streamerbotClient.on("Raw.Action", (raw) => {
-            handleStreamerbotAction(raw.data, raw);
-        });
+    ws.onopen = () => {
+        setStatus("🟢 Overlay Conectado ao Streamer.bot!");
+        
+        // Inscreve para receber TODOS os eventos do TikTok (inclusive Follow) e Actions
+        ws.send(JSON.stringify({
+            request: "Subscribe",
+            events: {
+                General: ["Custom"],
+                Raw: ["Action", "SubAction"],
+                TikTok: ["Gift", "Follow"]
+            },
+            id: "overlay_sub_all"
+        }));
 
-        setStatus("🟢 Overlay Unificado Conectado!");
         setTimeout(() => {
             if (CONFIG.showStatus) status.style.display = "none";
         }, 3000);
+    };
 
-    } catch (error) {
-        setStatus("🔴 Erro ao conectar ao Streamer.bot");
-        setTimeout(connectStreamerbot, 5000);
-    }
+    ws.onmessage = (event) => {
+        try {
+            const raw = JSON.parse(event.data);
+            processarEventoWebSocket(raw);
+        } catch (e) {
+            console.warn("Erro ao ler evento do WebSocket:", e);
+        }
+    };
+
+    ws.onclose = () => {
+        setStatus("🔴 Reconectando ao Streamer.bot em 3s...");
+        setTimeout(conectarWebSocketNativo, 3000);
+    };
+
+    ws.onerror = () => {
+        ws.close();
+    };
 }
 
 window.addEventListener("load", () => {
     renderMemeCarousel();
     initGalleryStorage();
     renderGalleryCarousel();
-    connectStreamerbot();
+    conectarWebSocketNativo();
 });
 </script>
 </body>
