@@ -328,7 +328,8 @@
 
 <script>
 const CONFIG = {
-    actionName: "PRESENTES",
+    // Escuta tanto PRESENTES quanto TIKTOK_MASTER
+    acceptedActions: ["PRESENTES", "TIKTOK_MASTER"],
 
     memeList: [
         { name: "Plankton Bolado", image: "rosa.png" },
@@ -347,6 +348,8 @@ const CONFIG = {
         { keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "5487"], video: "menino_de_pau.mp4", fullscreen: false },
         { keywords: ["gato assustador", "gato", "12631"], video: "gato.mp4", fullscreen: true }
     ],
+
+    followVideoFile: "follow.mp4", // Vídeo executado ao receber um Follow
 
     roseKeywords: ["rosa", "rose", "5655"],
     yameteFile: "yamete.mp4",
@@ -535,48 +538,58 @@ function handleStreamerbotAction(data) {
     if (!data) return;
 
     const actionName = data.name || data.actionName || "";
-    if (actionName !== CONFIG.actionName) return;
+    if (!CONFIG.acceptedActions.includes(actionName)) return;
 
     const args = data.arguments || {};
     const giftInput = String(args.giftName || args.gift_name || args.giftId || "").toLowerCase().trim();
+    const actionType = String(args.action || args.eventType || "").toLowerCase().trim();
     const repeatCount = Number(args.repeatCount || args.repeat_count || 1);
 
-    const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(kw));
-    if (isRose) {
-        if (repeatCount >= 10) {
-            enqueueItem({ type: "video", file: CONFIG.yameteFile, fullscreen: false });
-        } else {
-            enqueueItem({ type: "video", file: CONFIG.planktonFile, fullscreen: false });
-        }
-    } else {
-        const matchedMeme = CONFIG.memeRules.find(rule => 
-            rule.keywords.some(kw => giftInput.includes(kw))
-        );
-
-        if (matchedMeme) {
-            enqueueItem({ type: "video", file: matchedMeme.video, fullscreen: matchedMeme.fullscreen });
-        } else {
-            enqueueItem({ type: "audio", file: CONFIG.defaultAudioFile });
-        }
+    // 1. Verifica se foi um evento de Follow
+    if (actionType.includes("follow") || giftInput.includes("follow")) {
+        enqueueItem({ type: "video", file: CONFIG.followVideoFile, fullscreen: false });
+        return;
     }
 
-    const targetGift = CONFIG.galleryGifts.find(g => 
-        g.keywords.some(kw => giftInput.includes(kw))
-    );
+    // 2. Processa Presentes/Rosa se giftInput tiver valor
+    if (giftInput) {
+        const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(kw));
+        if (isRose) {
+            if (repeatCount >= 10) {
+                enqueueItem({ type: "video", file: CONFIG.yameteFile, fullscreen: false });
+            } else {
+                enqueueItem({ type: "video", file: CONFIG.planktonFile, fullscreen: false });
+            }
+        } else {
+            const matchedMeme = CONFIG.memeRules.find(rule => 
+                rule.keywords.some(kw => giftInput.includes(kw))
+            );
 
-    if (targetGift) {
-        const storageKey = "gallery_progress_data";
-        const galleryProgress = JSON.parse(localStorage.getItem(storageKey)) || {};
-        const currentQty = galleryProgress[targetGift.key] !== undefined ? galleryProgress[targetGift.key] : (targetGift.initial || 0);
+            if (matchedMeme) {
+                enqueueItem({ type: "video", file: matchedMeme.video, fullscreen: matchedMeme.fullscreen });
+            } else {
+                enqueueItem({ type: "audio", file: CONFIG.defaultAudioFile });
+            }
+        }
 
-        if (currentQty < targetGift.max) {
-            const newQty = Math.min(targetGift.max, currentQty + repeatCount);
-            galleryProgress[targetGift.key] = newQty;
-            localStorage.setItem(storageKey, JSON.stringify(galleryProgress));
-            renderGalleryCarousel();
+        const targetGift = CONFIG.galleryGifts.find(g => 
+            g.keywords.some(kw => giftInput.includes(kw))
+        );
 
-            if (newQty >= targetGift.max && currentQty < targetGift.max) {
-                enqueueItem({ type: "alert", image: targetGift.image, name: targetGift.name });
+        if (targetGift) {
+            const storageKey = "gallery_progress_data";
+            const galleryProgress = JSON.parse(localStorage.getItem(storageKey)) || {};
+            const currentQty = galleryProgress[targetGift.key] !== undefined ? galleryProgress[targetGift.key] : (targetGift.initial || 0);
+
+            if (currentQty < targetGift.max) {
+                const newQty = Math.min(targetGift.max, currentQty + repeatCount);
+                galleryProgress[targetGift.key] = newQty;
+                localStorage.setItem(storageKey, JSON.stringify(galleryProgress));
+                renderGalleryCarousel();
+
+                if (newQty >= targetGift.max && currentQty < targetGift.max) {
+                    enqueueItem({ type: "alert", image: targetGift.image, name: targetGift.name });
+                }
             }
         }
     }
