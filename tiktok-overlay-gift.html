@@ -320,7 +320,8 @@
 
 <script>
 const CONFIG = {
-    acceptedActions: ["PRESENTES", "TIKTOK_MASTER"],
+    // Aceita qualquer action contendo essas palavras no nome
+    acceptedActions: ["PRESENTES", "TIKTOK_MASTER", "FOLLOW"],
 
     memeList: [
         { name: "Plankton Bolado", image: "rosa.png" },
@@ -530,36 +531,22 @@ function processarFollowEvent() {
 }
 
 function handleStreamerbotAction(data, rawEvent) {
-    // Checagem de Follow NATIVO do TikTok (TikTok.Follow)
+    // 1. Checa se o nome da Action contem "follow"
+    const actionName = String(data?.name || data?.actionName || "").toLowerCase();
     const eventType = String(rawEvent?.event?.type || rawEvent?.event || "").toLowerCase();
-    if (eventType.includes("follow")) {
+
+    if (actionName.includes("follow") || eventType.includes("follow")) {
         processarFollowEvent();
         return;
     }
 
     if (!data) return;
 
+    // 2. Processa os presentes
     const args = data.arguments || data;
-    const actionType = String(args.action || args.eventType || "").toLowerCase().trim();
-
-    // Checagem de Follow por Action/Custom
-    if (actionType.includes("follow")) {
-        processarFollowEvent();
-        return;
-    }
-
-    const actionName = data.name || data.actionName || "";
-    if (actionName && !CONFIG.acceptedActions.includes(actionName)) return;
-
     const giftInput = String(args.giftName || args.gift_name || args.giftId || "").toLowerCase().trim();
     const repeatCount = Number(args.repeatCount || args.repeat_count || 1);
 
-    if (giftInput.includes("follow")) {
-        processarFollowEvent();
-        return;
-    }
-
-    // Processa Presentes/Rosa
     if (giftInput) {
         const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(kw));
         if (isRose) {
@@ -612,8 +599,7 @@ function connectStreamerbot() {
             endpoint: "/"
         });
 
-        // Inscreve nos eventos globais e do TikTok Follow
-        window.streamerbotClient.on("TikTok.Follow", ({ event, data }) => {
+        window.streamerbotClient.on("TikTok.Follow", () => {
             processarFollowEvent();
         });
 
