@@ -19,16 +19,16 @@
         font-family: 'Press Start 2P', cursive, monospace;
     }
 
-    /* 1. CARROSSEL DE MEMES (Atrás da Câmera - EXPANDIDO MÁXIMO) */
+    /* 1. CARROSSEL DE MEMES */
     #meme-carousel-container {
         position: absolute;
         top: 130px;
-        left: 40px; /* Expandido para as laterais */
-        width: 1000px; /* Largura quase total do overlay */
+        left: 40px;
+        width: 1000px;
         background: rgba(15, 12, 30, 0.92);
         border: 2px solid #5d3ebd;
         border-radius: 14px;
-        padding: 14px 12px 18px 12px; /* Expandido para baixo */
+        padding: 14px 12px 18px 12px;
         box-shadow: 0 0 20px rgba(123, 44, 191, 0.9);
         color: #fff;
         z-index: 10;
@@ -44,7 +44,7 @@
         letter-spacing: 1px;
     }
 
-    /* 2. CARROSSEL DA GALERIA (Rodapé) */
+    /* 2. CARROSSEL DA GALERIA */
     #gallery-carousel-container {
         position: absolute;
         top: 1348px;
@@ -96,14 +96,13 @@
         100% { transform: translateX(-50%); }
     }
 
-    /* CARDS DO CARROSSEL DE MEMES (TAMANHO MÁXIMO) */
     .meme-card {
         background: rgba(30, 20, 60, 0.88);
         border: 2px solid #7b2cbf;
         border-radius: 12px;
         padding: 10px 6px;
-        width: 170px; /* Card bem mais amplo */
-        height: 155px; /* Mais alto preenchendo para baixo */
+        width: 170px;
+        height: 155px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -112,7 +111,7 @@
     }
 
     .meme-img {
-        width: 85px; /* Imagem maior e mais visível */
+        width: 85px;
         height: 85px;
         object-fit: contain;
     }
@@ -140,7 +139,6 @@
         text-shadow: 1px 1px 2px #000;
     }
 
-    /* CARDS DA GALERIA */
     .gallery-card {
         background: rgba(20, 15, 40, 0.85);
         border: 2px solid #3d2b7d;
@@ -193,7 +191,6 @@
         max-width: 118px;
     }
 
-    /* ÁREA DOS VÍDEOS DE MEME */
     #overlay-video {
         position: absolute;
         top: 650px;
@@ -228,7 +225,6 @@
         object-fit: cover;
     }
 
-    /* POP-UP ALERTA DA GALERIA */
     #overlay-alert {
         position: absolute;
         top: 838px;
@@ -290,7 +286,6 @@
 
 <body>
 
-<!-- Carrossel de Memes (Topo - Tamanho Máximo) -->
 <div id="meme-carousel-container">
     <div class="title">✨ PRESENTES X MEMES ✨</div>
     <div class="carousel-wrapper">
@@ -298,7 +293,6 @@
     </div>
 </div>
 
-<!-- Carrossel da Galeria (Rodapé) -->
 <div id="gallery-carousel-container">
     <div class="title-gallery">✨ LIGHT UP MY GALLERY ✨</div>
     <div class="carousel-wrapper">
@@ -306,12 +300,10 @@
     </div>
 </div>
 
-<!-- Área do Vídeo Meme -->
 <div id="overlay-video">
     <video id="video" playsinline preload="auto"></video>
 </div>
 
-<!-- Pop-Up de Alerta da Galeria -->
 <div id="overlay-alert">
     <div id="alert-pop">
         <img id="alert-img" src="" alt="Alerta">
@@ -328,7 +320,6 @@
 
 <script>
 const CONFIG = {
-    // Escuta tanto PRESENTES quanto TIKTOK_MASTER
     acceptedActions: ["PRESENTES", "TIKTOK_MASTER"],
 
     memeList: [
@@ -349,7 +340,7 @@ const CONFIG = {
         { keywords: ["gato assustador", "gato", "12631"], video: "gato.mp4", fullscreen: true }
     ],
 
-    followVideoFile: "follow.mp4", // Vídeo executado ao receber um Follow
+    followVideoFile: "follow.mp4",
 
     roseKeywords: ["rosa", "rose", "5655"],
     yameteFile: "yamete.mp4",
@@ -534,24 +525,41 @@ async function processQueue() {
     processQueue();
 }
 
-function handleStreamerbotAction(data) {
-    if (!data) return;
+function processarFollowEvent() {
+    enqueueItem({ type: "video", file: CONFIG.followVideoFile, fullscreen: false });
+}
 
-    const actionName = data.name || data.actionName || "";
-    if (!CONFIG.acceptedActions.includes(actionName)) return;
-
-    const args = data.arguments || {};
-    const giftInput = String(args.giftName || args.gift_name || args.giftId || "").toLowerCase().trim();
-    const actionType = String(args.action || args.eventType || "").toLowerCase().trim();
-    const repeatCount = Number(args.repeatCount || args.repeat_count || 1);
-
-    // 1. Verifica se foi um evento de Follow
-    if (actionType.includes("follow") || giftInput.includes("follow")) {
-        enqueueItem({ type: "video", file: CONFIG.followVideoFile, fullscreen: false });
+function handleStreamerbotAction(data, rawEvent) {
+    // Checagem de Follow NATIVO do TikTok (TikTok.Follow)
+    const eventType = String(rawEvent?.event?.type || rawEvent?.event || "").toLowerCase();
+    if (eventType.includes("follow")) {
+        processarFollowEvent();
         return;
     }
 
-    // 2. Processa Presentes/Rosa se giftInput tiver valor
+    if (!data) return;
+
+    const args = data.arguments || data;
+    const actionType = String(args.action || args.eventType || "").toLowerCase().trim();
+
+    // Checagem de Follow por Action/Custom
+    if (actionType.includes("follow")) {
+        processarFollowEvent();
+        return;
+    }
+
+    const actionName = data.name || data.actionName || "";
+    if (actionName && !CONFIG.acceptedActions.includes(actionName)) return;
+
+    const giftInput = String(args.giftName || args.gift_name || args.giftId || "").toLowerCase().trim();
+    const repeatCount = Number(args.repeatCount || args.repeat_count || 1);
+
+    if (giftInput.includes("follow")) {
+        processarFollowEvent();
+        return;
+    }
+
+    // Processa Presentes/Rosa
     if (giftInput) {
         const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(kw));
         if (isRose) {
@@ -604,8 +612,13 @@ function connectStreamerbot() {
             endpoint: "/"
         });
 
-        window.streamerbotClient.on("Raw.Action", ({ event, data }) => {
-            handleStreamerbotAction(data);
+        // Inscreve nos eventos globais e do TikTok Follow
+        window.streamerbotClient.on("TikTok.Follow", ({ event, data }) => {
+            processarFollowEvent();
+        });
+
+        window.streamerbotClient.on("Raw.Action", (raw) => {
+            handleStreamerbotAction(raw.data, raw);
         });
 
         setStatus("🟢 Overlay Unificado Conectado!");
