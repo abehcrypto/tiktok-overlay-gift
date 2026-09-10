@@ -361,11 +361,11 @@ const CONFIG = {
 
     galleryGifts: [
         { key: "rosa", name: "Rosa", image: "rosa.png", max: 8, keywords: ["rosa", "rose", "5655"] },
-        { key: "maos_fazendo_coracao", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "5487"] },
+        { key: "maos_fazendo_coracao", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao", "5487"] },
         { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut", "5879"] },
-        { key: "chapeu_e_bigode", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "6427"] },
-        { key: "maos_em_coracao", name: "Mãos em coração", image: "mãos_em_coração.png", max: 1, keywords: ["mãos em coração"] },
-        { key: "coracoes", name: "Corações", image: "corações.png", max: 1, keywords: ["corações", "coracoes"] },
+        { key: "chapeu_e_bigode", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode", "6427"] },
+        { key: "maos_em_coracao", name: "Mãos em coração", image: "mãos_em_coração.png", max: 1, keywords: ["mãos em coração", "maos em coracao", "hand heart", "5660"] },
+        { key: "coracoes", name: "Corações", image: "corações.png", max: 1, keywords: ["corações", "coracoes", "5586"] },
         { key: "corgi", name: "Corgi", image: "corgi.png", max: 1, keywords: ["corgi"] },
         { key: "pistola_dinheiro", name: "Pistola de dinheiro", image: "pistola_de_dinheiro.png", max: 1, keywords: ["pistola de dinheiro"] },
         { key: "cisne", name: "Cisne", image: "cisne.png", max: 1, keywords: ["cisne"] },
@@ -436,24 +436,21 @@ function getMondayKey() {
 }
 
 function initGalleryStorage() {
-    const currentWeekKey = getMondayKey();
-    const savedWeekKey = localStorage.getItem("gallery_last_reset_week");
-
-    if (savedWeekKey !== currentWeekKey) {
-        localStorage.setItem("gallery_progress_data", JSON.stringify({}));
-        localStorage.setItem("gallery_last_reset_week", currentWeekKey);
-    }
-
     const storageKey = "gallery_progress_data";
-    let progressData = JSON.parse(localStorage.getItem(storageKey)) || {};
+    let progressData = {};
 
     CONFIG.galleryGifts.forEach(item => {
-        if (progressData[item.key] === undefined) {
-            progressData[item.key] = 0;
+        if (item.key === "rosa") {
+            progressData[item.key] = 8; // Concluído (8/8)
+        } else if (item.key === "maos_em_coracao") {
+            progressData[item.key] = 1; // Concluído (1/1)
+        } else {
+            progressData[item.key] = 0; // Zerados (inclui maos_fazendo_coracao)
         }
     });
 
     localStorage.setItem(storageKey, JSON.stringify(progressData));
+    localStorage.setItem("gallery_last_reset_week", getMondayKey());
 }
 
 function renderGalleryCarousel() {
@@ -464,7 +461,7 @@ function renderGalleryCarousel() {
     const fullGallery = [...CONFIG.galleryGifts, ...CONFIG.galleryGifts];
 
     fullGallery.forEach(item => {
-        const currentCount = galleryProgress[item.key] || 0;
+        const currentCount = galleryProgress[item.key] !== undefined ? galleryProgress[item.key] : 0;
         const isUnlocked = currentCount >= item.max;
 
         const card = document.createElement("div");
@@ -510,9 +507,8 @@ function renderChromaFrame() {
         let g = frame.data[i * 4 + 1];
         let b = frame.data[i * 4 + 2];
 
-        // Filtro para remover o verde dominante
         if (g > 90 && r < 120 && b < 120 && g > r * 1.2 && g > b * 1.2) {
-            frame.data[i * 4 + 3] = 0; // Transparente
+            frame.data[i * 4 + 3] = 0;
         }
     }
 
