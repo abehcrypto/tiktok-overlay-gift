@@ -341,12 +341,12 @@ const CONFIG = {
 
     memeRules: [
         { keywords: ["heart me", "heart_me", "7934"], video: "mamaco.mp4", fullscreen: false, chroma: false },
-        { keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "6427"], video: "susto.mp4", fullscreen: false, chroma: false },
+        { keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "cap & mustache", "mustache and cap", "6427"], video: "susto.mp4", fullscreen: false, chroma: false },
         { keywords: ["rosquinha", "donut", "doughnut", "5879"], video: "sebastian.mp4", fullscreen: false, chroma: false },
-        { keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "finger heart", "5487"], video: "menino_de_pau.mp4", fullscreen: false, chroma: false },
+        { keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "maos_fazendo_coracao", "finger heart", "finger_heart", "5487"], video: "menino_de_pau.mp4", fullscreen: false, chroma: false },
         { keywords: ["gato assustador", "gato", "cat", "12631"], video: "gato.mp4", fullscreen: true, chroma: false },
         { keywords: ["muito fofo", "muito_fofo", "9355"], video: "ambulancia gemidão.mp4", fullscreen: false, chroma: false },
-        { keywords: ["fogos de artifício efeito aranha", "fogos_de_artif_cio_efeito_aranha", "fogos", "aranha", "15100"], video: "fah.mp4", fullscreen: false, chroma: false },
+        { keywords: ["fogos de artifício efeito aranha", "fogos de artificio efeito aranha", "fogos_de_artif_cio_efeito_aranha", "fogos_de_artificio_efeito_aranha", "wave firework", "wavefirework", "fogos", "aranha", "15100"], video: "fah.mp4", fullscreen: false, chroma: false },
         { keywords: ["leão", "leao", "lion", "6369"], video: "sorrisão lion.mp4", fullscreen: false, chroma: false },
         { keywords: ["capivara", "capybara", "14488"], video: "docks de olho.mp4", fullscreen: false, chroma: false },
         { keywords: ["incrivel gatinho", "incrivel_gatinho", "hã", "ha", "15232"], video: "hã.mp4", fullscreen: false, chroma: false },
@@ -361,9 +361,9 @@ const CONFIG = {
 
     galleryGifts: [
         { key: "rosa", name: "Rosa", image: "rosa.png", max: 8, keywords: ["rosa", "rose", "5655"] },
-        { key: "maos_fazendo_coracao", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao", "5487"] },
-        { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut", "5879"] },
-        { key: "chapeu_e_bigode", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode", "6427"] },
+        { key: "maos_fazendo_coracao", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "maos_fazendo_coracao", "finger heart", "finger_heart", "5487"] },
+        { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut", "doughnut", "5879"] },
+        { key: "chapeu_e_bigode", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "cap & mustache", "mustache and cap", "6427"] },
         { key: "maos_em_coracao", name: "Mãos em coração", image: "mãos_em_coração.png", max: 1, keywords: ["mãos em coração", "maos em coracao", "hand heart", "5660"] },
         { key: "coracoes", name: "Corações", image: "corações.png", max: 1, keywords: ["corações", "coracoes", "5586"] },
         { key: "corgi", name: "Corgi", image: "corgi.png", max: 1, keywords: ["corgi"] },
@@ -374,7 +374,7 @@ const CONFIG = {
             name: "Um fragmento de...", 
             image: "Um_fragmento_de_esperanca.png", 
             max: 10, 
-            keywords: ["fragmento", "fragmento de esperança", "um fragmento de esperança", "59881"] 
+            keywords: ["fragmento", "fragmento de esperança", "um fragmento de esperança", "esperança", "esperanca", "59881"] 
         },
         { 
             key: "armadura_guerreiro", 
@@ -437,17 +437,21 @@ function getMondayKey() {
 
 function initGalleryStorage() {
     const storageKey = "gallery_progress_data";
-    let progressData = {};
+    let progressData = JSON.parse(localStorage.getItem(storageKey)) || {};
 
     CONFIG.galleryGifts.forEach(item => {
-        if (item.key === "rosa") {
-            progressData[item.key] = 8; // Concluído (8/8)
-        } else if (item.key === "maos_em_coracao") {
-            progressData[item.key] = 1; // Concluído (1/1)
-        } else {
-            progressData[item.key] = 0; // Zerados (inclui maos_fazendo_coracao)
+        if (progressData[item.key] === undefined) {
+            progressData[item.key] = 0;
         }
     });
+
+    // FORÇADO: Garante que os valores máximos estejam acesos
+    progressData["rosa"] = 8;
+    progressData["maos_em_coracao"] = 1;
+    progressData["fragmento_esperanca"] = 10;
+    progressData["chapeu_e_bigode"] = 1;
+    progressData["rosquinha"] = 2;
+    progressData["maos_fazendo_coracao"] = 4;
 
     localStorage.setItem(storageKey, JSON.stringify(progressData));
     localStorage.setItem("gallery_last_reset_week", getMondayKey());
@@ -610,8 +614,10 @@ function processarEventoWebSocket(raw) {
     
     const eventType = String(raw.event?.type || raw.data?.type || "").toLowerCase();
     const actionName = String(raw.data?.name || raw.event?.name || args.action || "").toLowerCase();
+    const triggerTypeId = Number(args.triggerTypeId || args.trigger_type_id || 0);
 
-    if (eventType === "follow" || actionName === "follow") {
+    // Verificação de Follow pelo triggerTypeId = 9 (TikTok Master) ou pelo nome do evento
+    if (triggerTypeId === 9 || eventType === "follow" || actionName === "follow") {
         enqueueItem({ type: "video", file: CONFIG.followVideoFile, fullscreen: false, chroma: false, maxDuration: 3000 });
         return;
     }
@@ -636,9 +642,13 @@ function processarEventoWebSocket(raw) {
             );
 
             if (matchedMeme) {
-                enqueueItem({ type: "video", file: matchedMeme.video, fullscreen: matchedMeme.fullscreen, chroma: matchedMeme.chroma || false });
+                for (let i = 0; i < repeatCount; i++) {
+                    enqueueItem({ type: "video", file: matchedMeme.video, fullscreen: matchedMeme.fullscreen, chroma: matchedMeme.chroma || false });
+                }
             } else {
-                enqueueItem({ type: "audio", file: CONFIG.defaultAudioFile });
+                for (let i = 0; i < repeatCount; i++) {
+                    enqueueItem({ type: "audio", file: CONFIG.defaultAudioFile });
+                }
             }
         }
 
