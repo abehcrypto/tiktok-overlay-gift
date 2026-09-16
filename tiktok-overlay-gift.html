@@ -360,6 +360,7 @@ const CONFIG = {
     planktonFile: "plankton.mp4",
 
     galleryGifts: [
+        { key: "capacete_corrida", name: "Capacete de corrida", image: "Capacete_de_corrida.png", max: 1, keywords: ["capacete de corrida", "capacete", "racing helmet"] },
         { key: "rosa", name: "Rosa", image: "rosa.png", max: 8, keywords: ["rosa", "rose", "5655"] },
         { key: "maos_fazendo_coracao", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "maos_fazendo_coracao", "finger heart", "finger_heart", "5487"] },
         { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut", "doughnut", "5879"] },
@@ -368,21 +369,7 @@ const CONFIG = {
         { key: "coracoes", name: "Corações", image: "corações.png", max: 1, keywords: ["corações", "coracoes", "5586"] },
         { key: "corgi", name: "Corgi", image: "corgi.png", max: 1, keywords: ["corgi"] },
         { key: "pistola_dinheiro", name: "Pistola de dinheiro", image: "pistola_de_dinheiro.png", max: 1, keywords: ["pistola de dinheiro"] },
-        { key: "cisne", name: "Cisne", image: "cisne.png", max: 1, keywords: ["cisne"] },
-        { 
-            key: "fragmento_esperanca", 
-            name: "Um fragmento de...", 
-            image: "Um_fragmento_de_esperanca.png", 
-            max: 10, 
-            keywords: ["fragmento", "fragmento de esperança", "um fragmento de esperança", "esperança", "esperanca", "59881"] 
-        },
-        { 
-            key: "armadura_guerreiro", 
-            name: "Armadura de um gu...", 
-            image: "Armadura_de_um_guerreiro.png", 
-            max: 1, 
-            keywords: ["armadura", "armadura de um guerreiro", "59882"] 
-        }
+        { key: "cisne", name: "Cisne", image: "cisne.png", max: 1, keywords: ["cisne"] }
     ],
 
     defaultAudioFile: "dinheiro.mp3",
@@ -437,21 +424,14 @@ function getMondayKey() {
 
 function initGalleryStorage() {
     const storageKey = "gallery_progress_data";
-    let progressData = JSON.parse(localStorage.getItem(storageKey)) || {};
+    let progressData = {};
 
     CONFIG.galleryGifts.forEach(item => {
-        if (progressData[item.key] === undefined) {
-            progressData[item.key] = 0;
-        }
+        progressData[item.key] = 0;
     });
 
-    // FORÇADO: Garante que os valores máximos estejam acesos
+    // Apenas a Rosa vem iluminada (8/8) nesta semana
     progressData["rosa"] = 8;
-    progressData["maos_em_coracao"] = 1;
-    progressData["fragmento_esperanca"] = 10;
-    progressData["chapeu_e_bigode"] = 1;
-    progressData["rosquinha"] = 2;
-    progressData["maos_fazendo_coracao"] = 4;
 
     localStorage.setItem(storageKey, JSON.stringify(progressData));
     localStorage.setItem("gallery_last_reset_week", getMondayKey());
@@ -616,7 +596,6 @@ function processarEventoWebSocket(raw) {
     const actionName = String(raw.data?.name || raw.event?.name || args.action || "").toLowerCase();
     const triggerTypeId = Number(args.triggerTypeId || args.trigger_type_id || 0);
 
-    // Verificação de Follow pelo triggerTypeId = 9 (TikTok Master) ou pelo nome do evento
     if (triggerTypeId === 9 || eventType === "follow" || actionName === "follow") {
         enqueueItem({ type: "video", file: CONFIG.followVideoFile, fullscreen: false, chroma: false, maxDuration: 3000 });
         return;
