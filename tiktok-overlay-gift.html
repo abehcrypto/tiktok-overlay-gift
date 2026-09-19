@@ -424,17 +424,55 @@ function getMondayKey() {
 
 function initGalleryStorage() {
     const storageKey = "gallery_progress_data";
-    let progressData = {};
+    const resetKey = "gallery_last_reset_week";
+    const currentWeek = getMondayKey();
 
+    // Não apaga o progresso da galeria ao recarregar o overlay.
+    // Assim, presentes já completados continuam iluminados.
+    let progressData = JSON.parse(localStorage.getItem(storageKey) || "null");
+
+    // Só cria/reset a galeria quando ainda não existe progresso
+    // ou quando começa uma nova semana.
+    if (!progressData || localStorage.getItem(resetKey) !== currentWeek) {
+        progressData = {};
+
+        CONFIG.galleryGifts.forEach(item => {
+            progressData[item.key] = 0;
+        });
+
+        // Presentes já concluídos nesta semana:
+        progressData["rosa"] = 8;
+        progressData["maos_fazendo_coracao"] = 4;
+
+        localStorage.setItem(storageKey, JSON.stringify(progressData));
+        localStorage.setItem(resetKey, currentWeek);
+        return;
+    }
+
+    let changed = false;
+
+    // Presentes que já foram concluídos nesta semana permanecem iluminados,
+    // inclusive se o navegador já tinha uma versão anterior da galeria salva.
+    if (progressData["rosa"] !== 8) {
+        progressData["rosa"] = 8;
+        changed = true;
+    }
+    if (progressData["maos_fazendo_coracao"] !== 4) {
+        progressData["maos_fazendo_coracao"] = 4;
+        changed = true;
+    }
+
+    // Garante contador para presentes adicionados posteriormente.
     CONFIG.galleryGifts.forEach(item => {
-        progressData[item.key] = 0;
+        if (progressData[item.key] === undefined) {
+            progressData[item.key] = 0;
+            changed = true;
+        }
     });
 
-    // Apenas a Rosa vem iluminada (8/8) nesta semana
-    progressData["rosa"] = 8;
-
-    localStorage.setItem(storageKey, JSON.stringify(progressData));
-    localStorage.setItem("gallery_last_reset_week", getMondayKey());
+    if (changed) {
+        localStorage.setItem(storageKey, JSON.stringify(progressData));
+    }
 }
 
 function renderGalleryCarousel() {
