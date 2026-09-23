@@ -424,11 +424,32 @@ function getMondayKey() {
 function initGalleryStorage() {
     const storageKey = "gallery_progress_data";
     const resetKey = "gallery_last_reset_week";
+    const forceResetKey = "gallery_force_reset_v3"; // Força a limpeza no cache do TikTok LIVE Studio
     const currentWeek = getMondayKey();
 
     let progressData = JSON.parse(localStorage.getItem(storageKey) || "null");
 
-    // Reinicia o progresso quando a lista mudar ou numa nova semana
+    // Força o reset limpo uma única vez para apagar dados velhos do cache
+    if (!localStorage.getItem(forceResetKey)) {
+        progressData = {
+            "rosa": 10,
+            "maos_fazendo_coracao": 0,
+            "rosquinha": 0,
+            "chapeu_e_bigode": 0,
+            "maos_em_coracao": 0,
+            "coracoes": 0,
+            "corgi": 0,
+            "pistola_dinheiro": 0,
+            "cisne": 0
+        };
+
+        localStorage.setItem(storageKey, JSON.stringify(progressData));
+        localStorage.setItem(resetKey, currentWeek);
+        localStorage.setItem(forceResetKey, "true");
+        return;
+    }
+
+    // Reset padrão no início da semana
     if (!progressData || localStorage.getItem(resetKey) !== currentWeek) {
         progressData = {};
 
@@ -436,7 +457,6 @@ function initGalleryStorage() {
             progressData[item.key] = 0;
         });
 
-        // Rosa (10/10) fica iluminada por padrão após o reset
         progressData["rosa"] = 10;
 
         localStorage.setItem(storageKey, JSON.stringify(progressData));
@@ -446,13 +466,18 @@ function initGalleryStorage() {
 
     let changed = false;
 
-    // Garante que a Rosa (10/10) permaneça iluminada
+    // Mantém a Rosa em 10
     if (progressData["rosa"] !== 10) {
         progressData["rosa"] = 10;
         changed = true;
     }
 
-    // Inicializa novos campos de presentes se necessário
+    // Corrige as mãos em coração para 0
+    if (progressData["maos_fazendo_coracao"] !== 0) {
+        progressData["maos_fazendo_coracao"] = 0;
+        changed = true;
+    }
+
     CONFIG.galleryGifts.forEach(item => {
         if (progressData[item.key] === undefined) {
             progressData[item.key] = 0;
@@ -460,7 +485,6 @@ function initGalleryStorage() {
         }
     });
 
-    // Remove chaves antigas que não pertençam à galeria atual
     Object.keys(progressData).forEach(key => {
         if (!CONFIG.galleryGifts.some(item => item.key === key)) {
             delete progressData[key];
