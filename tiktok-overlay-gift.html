@@ -341,7 +341,7 @@ const CONFIG = {
 
     memeRules: [
         { keywords: ["heart me", "heart_me", "7934"], video: "mamaco.mp4", fullscreen: false, chroma: false },
-        { keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "cap & mustache", "mustache and cap", "6427"], video: "susto.mp4", fullscreen: false, chroma: false },
+        { keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "cap & mustache", "mustache and cap", "mustache", "chapéu", "chapeu", "6427"], video: "susto.mp4", fullscreen: false, chroma: false },
         { keywords: ["rosquinha", "donut", "doughnut", "5879"], video: "sebastian.mp4", fullscreen: false, chroma: false },
         { keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "maos_fazendo_coracao", "finger heart", "finger_heart", "5487"], video: "menino_de_pau.mp4", fullscreen: false, chroma: false },
         { keywords: ["gato assustador", "gato", "cat", "12631"], video: "gato.mp4", fullscreen: true, chroma: false },
@@ -363,7 +363,7 @@ const CONFIG = {
         { key: "rosa", name: "Rosa", image: "rosa.png", max: 10, keywords: ["rosa", "rose", "5655"] },
         { key: "maos_fazendo_coracao", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "maos_fazendo_coracao", "finger heart", "finger_heart", "5487"] },
         { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut", "doughnut", "5879"] },
-        { key: "chapeu_e_bigode", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "cap & mustache", "mustache and cap", "6427"] },
+        { key: "chapeu_e_bigode", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "cap & mustache", "mustache and cap", "mustache", "chapéu", "chapeu", "6427"] },
         { key: "maos_em_coracao", name: "Mãos em coração", image: "mãos_em_coração.png", max: 1, keywords: ["mãos em coração", "maos em coracao", "hand heart", "5660"] },
         { key: "coracoes", name: "Corações", image: "corações.png", max: 1, keywords: ["corações", "coracoes", "5586"] },
         { key: "corgi", name: "Corgi", image: "corgi.png", max: 1, keywords: ["corgi"] },
@@ -424,19 +424,18 @@ function getMondayKey() {
 function initGalleryStorage() {
     const storageKey = "gallery_progress_data";
     const resetKey = "gallery_last_reset_week";
-    const forceResetKey = "gallery_force_reset_v3"; // Força a limpeza no cache do TikTok LIVE Studio
+    const forceResetKey = "gallery_force_reset_v5";
     const currentWeek = getMondayKey();
 
     let progressData = JSON.parse(localStorage.getItem(storageKey) || "null");
 
-    // Força o reset limpo uma única vez para apagar dados velhos do cache
     if (!localStorage.getItem(forceResetKey)) {
         progressData = {
             "rosa": 10,
-            "maos_fazendo_coracao": 0,
+            "maos_em_coracao": 1,
+            "chapeu_e_bigode": 1,
+            "maos_fazendo_coracao": 4,
             "rosquinha": 0,
-            "chapeu_e_bigode": 0,
-            "maos_em_coracao": 0,
             "coracoes": 0,
             "corgi": 0,
             "pistola_dinheiro": 0,
@@ -449,7 +448,6 @@ function initGalleryStorage() {
         return;
     }
 
-    // Reset padrão no início da semana
     if (!progressData || localStorage.getItem(resetKey) !== currentWeek) {
         progressData = {};
 
@@ -458,6 +456,9 @@ function initGalleryStorage() {
         });
 
         progressData["rosa"] = 10;
+        progressData["maos_em_coracao"] = 1;
+        progressData["chapeu_e_bigode"] = 1;
+        progressData["maos_fazendo_coracao"] = 4;
 
         localStorage.setItem(storageKey, JSON.stringify(progressData));
         localStorage.setItem(resetKey, currentWeek);
@@ -466,17 +467,10 @@ function initGalleryStorage() {
 
     let changed = false;
 
-    // Mantém a Rosa em 10
-    if (progressData["rosa"] !== 10) {
-        progressData["rosa"] = 10;
-        changed = true;
-    }
-
-    // Corrige as mãos em coração para 0
-    if (progressData["maos_fazendo_coracao"] !== 0) {
-        progressData["maos_fazendo_coracao"] = 0;
-        changed = true;
-    }
+    if (progressData["rosa"] !== 10) { progressData["rosa"] = 10; changed = true; }
+    if (progressData["maos_em_coracao"] !== 1) { progressData["maos_em_coracao"] = 1; changed = true; }
+    if (progressData["chapeu_e_bigode"] !== 1) { progressData["chapeu_e_bigode"] = 1; changed = true; }
+    if (progressData["maos_fazendo_coracao"] !== 4) { progressData["maos_fazendo_coracao"] = 4; changed = true; }
 
     CONFIG.galleryGifts.forEach(item => {
         if (progressData[item.key] === undefined) {
@@ -661,7 +655,11 @@ function processarEventoWebSocket(raw) {
         return;
     }
 
-    const giftInput = String(args.giftName || args.gift_name || args.giftId || args.gift_id || args.rawInput || "").toLowerCase().trim();
+    const giftName = String(args.giftName || args.gift_name || "").toLowerCase().trim();
+    const giftId = String(args.giftId || args.gift_id || "").trim();
+    const rawInput = String(args.rawInput || "").toLowerCase().trim();
+
+    const giftInput = `${giftName} ${giftId} ${rawInput}`.trim();
 
     if (giftInput) {
         const repeatCount = Number(args.repeatCount || args.repeat_count || args.coins || args.count || 1);
