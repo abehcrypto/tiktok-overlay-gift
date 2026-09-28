@@ -360,7 +360,7 @@ const CONFIG = {
     planktonFile: "plankton.mp4",
 
     galleryGifts: [
-        { key: "rosa", name: "Rosa", image: "rosa.png", max: 10, keywords: ["rosa", "rose", "5655"] },
+        { key: "rosa", name: "Rosa", image: "rosa.png", max: 8, keywords: ["rosa", "rose", "5655"] },
         { key: "maos_fazendo_coracao", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "maos_fazendo_coracao", "finger heart", "finger_heart", "5487"] },
         { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut", "doughnut", "5879"] },
         { key: "chapeu_e_bigode", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "cap & mustache", "mustache and cap", "mustache", "chapéu", "chapeu", "6427"] },
@@ -424,23 +424,16 @@ function getMondayKey() {
 function initGalleryStorage() {
     const storageKey = "gallery_progress_data";
     const resetKey = "gallery_last_reset_week";
-    const forceResetKey = "gallery_force_reset_v5";
+    const forceResetKey = "gallery_force_reset_v6";
     const currentWeek = getMondayKey();
 
     let progressData = JSON.parse(localStorage.getItem(storageKey) || "null");
 
     if (!localStorage.getItem(forceResetKey)) {
-        progressData = {
-            "rosa": 10,
-            "maos_em_coracao": 1,
-            "chapeu_e_bigode": 1,
-            "maos_fazendo_coracao": 4,
-            "rosquinha": 0,
-            "coracoes": 0,
-            "corgi": 0,
-            "pistola_dinheiro": 0,
-            "cisne": 0
-        };
+        progressData = {};
+        CONFIG.galleryGifts.forEach(item => {
+            progressData[item.key] = 0;
+        });
 
         localStorage.setItem(storageKey, JSON.stringify(progressData));
         localStorage.setItem(resetKey, currentWeek);
@@ -450,44 +443,13 @@ function initGalleryStorage() {
 
     if (!progressData || localStorage.getItem(resetKey) !== currentWeek) {
         progressData = {};
-
         CONFIG.galleryGifts.forEach(item => {
             progressData[item.key] = 0;
         });
 
-        progressData["rosa"] = 10;
-        progressData["maos_em_coracao"] = 1;
-        progressData["chapeu_e_bigode"] = 1;
-        progressData["maos_fazendo_coracao"] = 4;
-
         localStorage.setItem(storageKey, JSON.stringify(progressData));
         localStorage.setItem(resetKey, currentWeek);
         return;
-    }
-
-    let changed = false;
-
-    if (progressData["rosa"] !== 10) { progressData["rosa"] = 10; changed = true; }
-    if (progressData["maos_em_coracao"] !== 1) { progressData["maos_em_coracao"] = 1; changed = true; }
-    if (progressData["chapeu_e_bigode"] !== 1) { progressData["chapeu_e_bigode"] = 1; changed = true; }
-    if (progressData["maos_fazendo_coracao"] !== 4) { progressData["maos_fazendo_coracao"] = 4; changed = true; }
-
-    CONFIG.galleryGifts.forEach(item => {
-        if (progressData[item.key] === undefined) {
-            progressData[item.key] = 0;
-            changed = true;
-        }
-    });
-
-    Object.keys(progressData).forEach(key => {
-        if (!CONFIG.galleryGifts.some(item => item.key === key)) {
-            delete progressData[key];
-            changed = true;
-        }
-    });
-
-    if (changed) {
-        localStorage.setItem(storageKey, JSON.stringify(progressData));
     }
 }
 
