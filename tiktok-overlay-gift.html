@@ -427,30 +427,47 @@ function initGalleryStorage() {
     const forceResetKey = "gallery_force_reset_v6";
     const currentWeek = getMondayKey();
 
-    let progressData = JSON.parse(localStorage.getItem(storageKey) || "null");
+    let progressData = {};
+    try {
+        progressData = JSON.parse(localStorage.getItem(storageKey) || "null") || {};
+    } catch (error) {
+        console.warn("Progresso da galeria inválido; recriando dados.", error);
+        progressData = {};
+    }
 
-    if (!localStorage.getItem(forceResetKey)) {
+    const firstInitialization = !localStorage.getItem(forceResetKey);
+    const weekChanged = localStorage.getItem(resetKey) !== currentWeek;
+
+    // Inicializa/zera os demais presentes apenas na primeira configuração
+    // ou quando começa uma nova semana.
+    if (firstInitialization || weekChanged || !localStorage.getItem(storageKey)) {
         progressData = {};
         CONFIG.galleryGifts.forEach(item => {
             progressData[item.key] = 0;
         });
-
-        localStorage.setItem(storageKey, JSON.stringify(progressData));
-        localStorage.setItem(resetKey, currentWeek);
-        localStorage.setItem(forceResetKey, "true");
-        return;
     }
 
-    if (!progressData || localStorage.getItem(resetKey) !== currentWeek) {
-        progressData = {};
-        CONFIG.galleryGifts.forEach(item => {
+    // Restaura os dois presentes já concluídos, mesmo após recarregar a página.
+    progressData["rosa"] = 8;
+    progressData["maos_fazendo_coracao"] = 4;
+
+    // Garante valores válidos sem apagar o progresso existente dos demais itens.
+    CONFIG.galleryGifts.forEach(item => {
+        const value = Number(progressData[item.key]);
+        if (!Number.isFinite(value) || value < 0) {
             progressData[item.key] = 0;
-        });
+        } else {
+            progressData[item.key] = Math.min(Math.floor(value), item.max);
+        }
+    });
 
-        localStorage.setItem(storageKey, JSON.stringify(progressData));
-        localStorage.setItem(resetKey, currentWeek);
-        return;
-    }
+    // Reaplica os itens concluídos após a validação.
+    progressData["rosa"] = 8;
+    progressData["maos_fazendo_coracao"] = 4;
+
+    localStorage.setItem(storageKey, JSON.stringify(progressData));
+    localStorage.setItem(resetKey, currentWeek);
+    localStorage.setItem(forceResetKey, "true");
 }
 
 function renderGalleryCarousel() {
