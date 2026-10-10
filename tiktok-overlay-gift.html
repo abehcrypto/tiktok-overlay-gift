@@ -321,3 +321,407 @@
 
 <script>
 const CONFIG = {
+    memeList: [
+        { name: "Plankton Bolado", image: "rosa.png" },
+        { name: "Yamete Kudasai", image: "rosa.png", combo: "x10" },
+        { name: "Menino de Pau", image: "mãos_fazendo_coração.png" },
+        { name: "Eu Vim Ver o Mamaco", image: "heart_me.png" },
+        { name: "Sebastian", image: "rosquinha.png" },
+        { name: "Susto", image: "chapéu_e_bigode.png" },
+        { name: "Gato Jackson", image: "gato_assustador.png" },
+        { name: "Gemidão", image: "Muito_Fofo.png" },
+        { name: "FAH", image: "Fogos_de_artif_cio_efeito_aranha.png" },
+        { name: "Lion Drougs", image: "Leão.png" },
+        { name: "James Docks", image: "Capybara.png" },
+        { name: "hã?", image: "Incrivel gatinho.png" },
+        { name: "cool", image: "cool.png" },
+        { name: "heart", image: "corações.png" },
+        { name: "Tobey Emo", image: "Perfume.png" }
+    ],
+
+    memeRules: [
+        { keywords: ["heart me", "heart_me", "7934"], video: "mamaco.mp4", fullscreen: false, chroma: false },
+        { keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "cap & mustache", "mustache and cap", "mustache", "chapéu", "chapeu", "6427"], video: "susto.mp4", fullscreen: false, chroma: false },
+        { keywords: ["rosquinha", "donut", "doughnut", "5879"], video: "sebastian.mp4", fullscreen: false, chroma: false },
+        { keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "maos_fazendo_coracao", "finger heart", "finger_heart", "5487"], video: "menino_de_pau.mp4", fullscreen: false, chroma: false },
+        { keywords: ["gato assustador", "gato", "cat", "12631"], video: "gato.mp4", fullscreen: true, chroma: false },
+        { keywords: ["muito fofo", "muito_fofo", "9355"], video: "ambulancia gemidão.mp4", fullscreen: false, chroma: false },
+        { keywords: ["fogos de artifício efeito aranha", "fogos de artificio efeito aranha", "fogos_de_artif_cio_efeito_aranha", "fogos_de_artificio_efeito_aranha", "wave firework", "wavefirework", "fogos", "aranha", "15100"], video: "fah.mp4", fullscreen: false, chroma: false },
+        { keywords: ["leão", "leao", "lion", "6369"], video: "sorrisão lion.mp4", fullscreen: false, chroma: false },
+        { keywords: ["capivara", "capybara", "14488"], video: "docks de olho.mp4", fullscreen: false, chroma: false },
+        { keywords: ["incrivel gatinho", "incrivel_gatinho", "hã", "ha", "15232"], video: "hã.mp4", fullscreen: false, chroma: false },
+        { keywords: ["cool", "127098"], video: "hum.mp4", fullscreen: false, chroma: false },
+        { keywords: ["corações", "coracoes", "coração", "coracao", "heart", "5586"], video: "heart play.mp4", fullscreen: false, chroma: false },
+        { keywords: ["perfume", "tobey", "tobey emo", "5658"], video: "tobey emo.mp4", fullscreen: false, chroma: true }
+    ],
+    followVideoFile: "follow.mp4",
+    roseKeywords: ["rosa", "rose", "5655"],
+    yameteFile: "yamete.mp4",
+    planktonFile: "plankton.mp4",
+
+    galleryGifts: [
+        { key: "rosa", name: "Rosa", image: "rosa.png", max: 8, keywords: ["rosa", "rose", "5655"] },
+        { key: "maos_fazendo_coracao", name: "Mãos fazendo cora...", image: "mãos_fazendo_coração.png", max: 4, keywords: ["mãos fazendo coração", "maos fazendo coracao", "mãos_fazendo_coração", "maos_fazendo_coracao", "finger heart", "finger_heart", "5487"] },
+        { key: "rosquinha", name: "Rosquinha", image: "rosquinha.png", max: 2, keywords: ["rosquinha", "donut", "doughnut", "5879"] },
+        { key: "chapeu_e_bigode", name: "Chapéu e Bigode", image: "chapéu_e_bigode.png", max: 1, keywords: ["chapéu e bigode", "chapeu e bigode", "chapéu_e_bigode", "chapeu_e_bigode", "cap and mustache", "cap & mustache", "mustache and cap", "mustache", "chapéu", "chapeu", "6427"] },
+        { key: "maos_em_coracao", name: "Mãos em coração", image: "mãos_em_coração.png", max: 1, keywords: ["mãos em coração", "maos em coracao", "hand heart", "5660"] },
+        { key: "coracoes", name: "Corações", image: "corações.png", max: 1, keywords: ["corações", "coracoes", "5586"] },
+        { key: "corgi", name: "Corgi", image: "corgi.png", max: 1, keywords: ["corgi"] },
+        { key: "pistola_dinheiro", name: "Pistola de dinheiro", image: "pistola_de_dinheiro.png", max: 1, keywords: ["pistola de dinheiro"] },
+        { key: "cisne", name: "Cisne", image: "cisne.png", max: 1, keywords: ["cisne"] }
+    ],
+
+    defaultAudioFile: "dinheiro.mp3",
+    showStatus: true
+};
+
+const overlayVideo = document.getElementById("overlay-video");
+const video = document.getElementById("video");
+const canvas = document.getElementById("chroma-canvas");
+const ctx = canvas.getContext("2d", { willReadFrequently: true });
+const audioDefault = document.getElementById("audio-default");
+const audioAlert = document.getElementById("audio-alert");
+const alertPop = document.getElementById("alert-pop");
+const alertImg = document.getElementById("alert-img");
+const alertTitle = document.getElementById("alert-title");
+const status = document.getElementById("status");
+
+let playing = false;
+let queue = [];
+let ws;
+let chromaAnimationId = null;
+
+function renderMemeCarousel() {
+    const track = document.getElementById("meme-track");
+    track.innerHTML = "";
+    const fullList = [...CONFIG.memeList, ...CONFIG.memeList];
+
+    fullList.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "meme-card";
+        const comboHTML = item.combo ? `<div class="combo-badge">COMBO ${item.combo}</div>` : "";
+        card.innerHTML = `
+            ${comboHTML}
+            <img class="meme-img" src="${item.image}" alt="${item.name}">
+            <div class="meme-name">${item.name}</div>
+        `;
+        track.appendChild(card);
+    });
+}
+
+function getMondayKey() {
+    const now = new Date();
+    const day = now.getDay(); 
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now.getFullYear(), now.getMonth(), diff);
+    
+    const yyyy = monday.getFullYear();
+    const mm = String(monday.getMonth() + 1).padStart(2, '0');
+    const dd = String(monday.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+function initGalleryStorage() {
+    const storageKey = "gallery_progress_data";
+    const resetKey = "gallery_last_reset_week";
+    const forceResetKey = "gallery_force_reset_v6";
+    const currentWeek = getMondayKey();
+
+    let progressData = JSON.parse(localStorage.getItem(storageKey) || "null");
+
+    if (!localStorage.getItem(forceResetKey)) {
+        progressData = {};
+        CONFIG.galleryGifts.forEach(item => {
+            progressData[item.key] = 0;
+        });
+
+        localStorage.setItem(storageKey, JSON.stringify(progressData));
+        localStorage.setItem(resetKey, currentWeek);
+        localStorage.setItem(forceResetKey, "true");
+        return;
+    }
+
+    if (!progressData || localStorage.getItem(resetKey) !== currentWeek) {
+        progressData = {};
+        CONFIG.galleryGifts.forEach(item => {
+            progressData[item.key] = 0;
+        });
+
+        localStorage.setItem(storageKey, JSON.stringify(progressData));
+        localStorage.setItem(resetKey, currentWeek);
+        return;
+    }
+}
+
+function renderGalleryCarousel() {
+    const track = document.getElementById("gallery-track");
+    track.innerHTML = "";
+
+    const galleryProgress = JSON.parse(localStorage.getItem("gallery_progress_data")) || {};
+    const fullGallery = [...CONFIG.galleryGifts, ...CONFIG.galleryGifts];
+
+    fullGallery.forEach(item => {
+        const currentCount = galleryProgress[item.key] !== undefined ? galleryProgress[item.key] : 0;
+        const isUnlocked = currentCount >= item.max;
+
+        const card = document.createElement("div");
+        card.className = `gallery-card ${isUnlocked ? 'unlocked' : ''}`;
+        card.innerHTML = `
+            <img class="gallery-img" src="${item.image}" alt="${item.name}">
+            <div class="gallery-count">${currentCount}/${item.max}</div>
+            <div class="gallery-name">${item.name}</div>
+        `;
+        track.appendChild(card);
+    });
+}
+
+function setStatus(text) {
+    if (CONFIG.showStatus) {
+        status.textContent = text;
+        status.style.display = "block";
+    } else {
+        status.style.display = "none";
+    }
+}
+
+function enqueueItem(item) {
+    if (!item) return;
+    queue.push(item);
+    processQueue();
+}
+
+function renderChromaFrame() {
+    if (video.paused || video.ended) return;
+
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+        canvas.width = video.videoWidth || 1080;
+        canvas.height = video.videoHeight || 1920;
+    }
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const l = frame.data.length / 4;
+
+    for (let i = 0; i < l; i++) {
+        let r = frame.data[i * 4 + 0];
+        let g = frame.data[i * 4 + 1];
+        let b = frame.data[i * 4 + 2];
+
+        if (g > 90 && r < 120 && b < 120 && g > r * 1.2 && g > b * 1.2) {
+            frame.data[i * 4 + 3] = 0;
+        }
+    }
+
+    ctx.putImageData(frame, 0, 0);
+    chromaAnimationId = requestAnimationFrame(renderChromaFrame);
+}
+
+async function processQueue() {
+    if (playing || queue.length === 0) return;
+    playing = true;
+
+    const item = queue.shift();
+
+    try {
+        if (item.type === "video") {
+            if (item.fullscreen) {
+                overlayVideo.classList.add("fullscreen");
+            } else {
+                overlayVideo.classList.remove("fullscreen");
+            }
+
+            video.pause();
+            video.currentTime = 0;
+            video.src = item.file;
+
+            if (item.chroma) {
+                video.style.display = "none";
+                canvas.style.display = "block";
+            } else {
+                canvas.style.display = "none";
+                video.style.display = "block";
+            }
+
+            await video.play();
+
+            if (item.chroma) {
+                renderChromaFrame();
+            }
+
+            await new Promise(resolve => {
+                let timer = null;
+
+                const finish = () => {
+                    if (timer) clearTimeout(timer);
+                    if (chromaAnimationId) cancelAnimationFrame(chromaAnimationId);
+                    video.removeEventListener("ended", finish);
+                    video.removeEventListener("error", finish);
+                    resolve();
+                };
+
+                video.addEventListener("ended", finish, { once: true });
+                video.addEventListener("error", finish, { once: true });
+
+                if (item.maxDuration) {
+                    timer = setTimeout(() => {
+                        finish();
+                    }, item.maxDuration);
+                }
+            });
+
+            video.pause();
+            video.removeAttribute("src");
+            video.load();
+            video.style.display = "none";
+            canvas.style.display = "none";
+            overlayVideo.classList.remove("fullscreen");
+
+        } else if (item.type === "alert") {
+            alertImg.src = item.image;
+            alertTitle.textContent = item.name.toUpperCase();
+            alertPop.style.display = "flex";
+            
+            audioAlert.currentTime = 0;
+            await audioAlert.play();
+
+            await new Promise(r => setTimeout(r, 3500));
+            alertPop.style.display = "none";
+
+        } else if (item.type === "audio") {
+            audioDefault.currentTime = 0;
+            await audioDefault.play();
+            await new Promise(r => setTimeout(r, 1500));
+        }
+
+    } catch (error) {
+        console.error("Erro ao processar fila:", item, error);
+        video.style.display = "none";
+        canvas.style.display = "none";
+        alertPop.style.display = "none";
+        overlayVideo.classList.remove("fullscreen");
+    }
+
+    playing = false;
+    processQueue();
+}
+
+function processarEventoWebSocket(raw) {
+    let args = raw.data?.arguments || raw.data || raw.arguments || raw.event?.properties || {};
+    
+    const eventType = String(raw.event?.type || raw.data?.type || "").toLowerCase();
+    const actionName = String(raw.data?.name || raw.event?.name || args.action || "").toLowerCase();
+    const triggerTypeId = Number(args.triggerTypeId || args.trigger_type_id || 0);
+
+    if (triggerTypeId === 9 || eventType === "follow" || actionName === "follow") {
+        enqueueItem({ type: "video", file: CONFIG.followVideoFile, fullscreen: false, chroma: false, maxDuration: 3000 });
+        return;
+    }
+
+    const giftName = String(args.giftName || args.gift_name || "").toLowerCase().trim();
+    const giftId = String(args.giftId || args.gift_id || "").trim();
+    const rawInput = String(args.rawInput || "").toLowerCase().trim();
+
+    const giftInput = `${giftName} ${giftId} ${rawInput}`.trim();
+
+    if (giftInput) {
+        const repeatCount = Number(args.repeatCount || args.repeat_count || args.coins || args.count || 1);
+
+        const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(kw));
+        if (isRose) {
+            if (repeatCount >= 10) {
+                enqueueItem({ type: "video", file: CONFIG.yameteFile, fullscreen: false, chroma: false });
+            } else {
+                for (let i = 0; i < repeatCount; i++) {
+                    enqueueItem({ type: "video", file: CONFIG.planktonFile, fullscreen: false, chroma: false });
+                }
+            }
+        } else {
+            const matchedMeme = CONFIG.memeRules.find(rule => 
+                rule.keywords.some(kw => giftInput.includes(kw))
+            );
+
+            if (matchedMeme) {
+                for (let i = 0; i < repeatCount; i++) {
+                    enqueueItem({ type: "video", file: matchedMeme.video, fullscreen: matchedMeme.fullscreen, chroma: matchedMeme.chroma || false });
+                }
+            } else {
+                for (let i = 0; i < repeatCount; i++) {
+                    enqueueItem({ type: "audio", file: CONFIG.defaultAudioFile });
+                }
+            }
+        }
+
+        const targetGift = CONFIG.galleryGifts.find(g => 
+            g.keywords.some(kw => giftInput.includes(kw))
+        );
+
+        if (targetGift) {
+            const storageKey = "gallery_progress_data";
+            const galleryProgress = JSON.parse(localStorage.getItem(storageKey)) || {};
+            const currentQty = galleryProgress[targetGift.key] || 0;
+
+            if (currentQty < targetGift.max) {
+                const newQty = Math.min(targetGift.max, currentQty + repeatCount);
+                galleryProgress[targetGift.key] = newQty;
+                localStorage.setItem(storageKey, JSON.stringify(galleryProgress));
+                renderGalleryCarousel();
+
+                if (newQty >= targetGift.max && currentQty < targetGift.max) {
+                    enqueueItem({ type: "alert", image: targetGift.image, name: targetGift.name });
+                }
+            }
+        }
+    }
+}
+
+function conectarWebSocketNativo() {
+    setStatus("🔄 Conectando...");
+
+    ws = new WebSocket("ws://127.0.0.1:8080/");
+
+    ws.onopen = () => {
+        setStatus("🟢 Conectado!");
+        
+        ws.send(JSON.stringify({
+            request: "Subscribe",
+            events: {
+                General: ["Custom"],
+                Raw: ["Action", "SubAction"],
+                TikTok: ["Gift", "Follow"]
+            },
+            id: "overlay_sub_all"
+        }));
+
+        setTimeout(() => {
+            if (CONFIG.showStatus) status.style.display = "none";
+        }, 3000);
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const raw = JSON.parse(event.data);
+            processarEventoWebSocket(raw);
+        } catch (e) {
+            console.warn("Erro ao ler evento do WebSocket:", e);
+        }
+    };
+
+    ws.onclose = () => {
+        setStatus("🔴 Reconectando...");
+        setTimeout(conectarWebSocketNativo, 3000);
+    };
+
+    ws.onerror = () => {
+        ws.close();
+    };
+}
+
+window.addEventListener("load", () => {
+    renderMemeCarousel();
+    initGalleryStorage();
+    renderGalleryCarousel();
+    conectarWebSocketNativo();
+});
+</script>
+</body>
+</html>
