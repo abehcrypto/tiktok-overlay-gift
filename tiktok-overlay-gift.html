@@ -424,16 +424,20 @@ function getMondayKey() {
 function initGalleryStorage() {
     const storageKey = "gallery_progress_data";
     const resetKey = "gallery_last_reset_week";
-    const forceResetKey = "gallery_force_reset_v6";
+    const forceResetKey = "gallery_force_reset_v8";
     const currentWeek = getMondayKey();
 
     let progressData = JSON.parse(localStorage.getItem(storageKey) || "null");
 
-    if (!localStorage.getItem(forceResetKey)) {
+    if (!localStorage.getItem(forceResetKey) || !progressData) {
         progressData = {};
         CONFIG.galleryGifts.forEach(item => {
             progressData[item.key] = 0;
         });
+
+        // Define os itens que já começam iluminados/completos
+        progressData["rosa"] = 8;
+        progressData["maos_fazendo_coracao"] = 4;
 
         localStorage.setItem(storageKey, JSON.stringify(progressData));
         localStorage.setItem(resetKey, currentWeek);
@@ -441,16 +445,23 @@ function initGalleryStorage() {
         return;
     }
 
-    if (!progressData || localStorage.getItem(resetKey) !== currentWeek) {
+    if (localStorage.getItem(resetKey) !== currentWeek) {
         progressData = {};
         CONFIG.galleryGifts.forEach(item => {
             progressData[item.key] = 0;
         });
 
+        progressData["rosa"] = 8;
+        progressData["maos_fazendo_coracao"] = 4;
+
         localStorage.setItem(storageKey, JSON.stringify(progressData));
         localStorage.setItem(resetKey, currentWeek);
         return;
     }
+
+    if (progressData["rosa"] < 8) progressData["rosa"] = 8;
+    if (progressData["maos_fazendo_coracao"] < 4) progressData["maos_fazendo_coracao"] = 4;
+    localStorage.setItem(storageKey, JSON.stringify(progressData));
 }
 
 function renderGalleryCarousel() {
@@ -579,149 +590,4 @@ async function processQueue() {
         } else if (item.type === "alert") {
             alertImg.src = item.image;
             alertTitle.textContent = item.name.toUpperCase();
-            alertPop.style.display = "flex";
-            
-            audioAlert.currentTime = 0;
-            await audioAlert.play();
-
-            await new Promise(r => setTimeout(r, 3500));
-            alertPop.style.display = "none";
-
-        } else if (item.type === "audio") {
-            audioDefault.currentTime = 0;
-            await audioDefault.play();
-            await new Promise(r => setTimeout(r, 1500));
-        }
-
-    } catch (error) {
-        console.error("Erro ao processar fila:", item, error);
-        video.style.display = "none";
-        canvas.style.display = "none";
-        alertPop.style.display = "none";
-        overlayVideo.classList.remove("fullscreen");
-    }
-
-    playing = false;
-    processQueue();
-}
-
-function processarEventoWebSocket(raw) {
-    let args = raw.data?.arguments || raw.data || raw.arguments || raw.event?.properties || {};
-    
-    const eventType = String(raw.event?.type || raw.data?.type || "").toLowerCase();
-    const actionName = String(raw.data?.name || raw.event?.name || args.action || "").toLowerCase();
-    const triggerTypeId = Number(args.triggerTypeId || args.trigger_type_id || 0);
-
-    if (triggerTypeId === 9 || eventType === "follow" || actionName === "follow") {
-        enqueueItem({ type: "video", file: CONFIG.followVideoFile, fullscreen: false, chroma: false, maxDuration: 3000 });
-        return;
-    }
-
-    const giftName = String(args.giftName || args.gift_name || "").toLowerCase().trim();
-    const giftId = String(args.giftId || args.gift_id || "").trim();
-    const rawInput = String(args.rawInput || "").toLowerCase().trim();
-
-    const giftInput = `${giftName} ${giftId} ${rawInput}`.trim();
-
-    if (giftInput) {
-        const repeatCount = Number(args.repeatCount || args.repeat_count || args.coins || args.count || 1);
-
-        const isRose = CONFIG.roseKeywords.some(kw => giftInput.includes(kw));
-        if (isRose) {
-            if (repeatCount >= 10) {
-                enqueueItem({ type: "video", file: CONFIG.yameteFile, fullscreen: false, chroma: false });
-            } else {
-                for (let i = 0; i < repeatCount; i++) {
-                    enqueueItem({ type: "video", file: CONFIG.planktonFile, fullscreen: false, chroma: false });
-                }
-            }
-        } else {
-            const matchedMeme = CONFIG.memeRules.find(rule => 
-                rule.keywords.some(kw => giftInput.includes(kw))
-            );
-
-            if (matchedMeme) {
-                for (let i = 0; i < repeatCount; i++) {
-                    enqueueItem({ type: "video", file: matchedMeme.video, fullscreen: matchedMeme.fullscreen, chroma: matchedMeme.chroma || false });
-                }
-            } else {
-                for (let i = 0; i < repeatCount; i++) {
-                    enqueueItem({ type: "audio", file: CONFIG.defaultAudioFile });
-                }
-            }
-        }
-
-        const targetGift = CONFIG.galleryGifts.find(g => 
-            g.keywords.some(kw => giftInput.includes(kw))
-        );
-
-        if (targetGift) {
-            const storageKey = "gallery_progress_data";
-            const galleryProgress = JSON.parse(localStorage.getItem(storageKey)) || {};
-            const currentQty = galleryProgress[targetGift.key] || 0;
-
-            if (currentQty < targetGift.max) {
-                const newQty = Math.min(targetGift.max, currentQty + repeatCount);
-                galleryProgress[targetGift.key] = newQty;
-                localStorage.setItem(storageKey, JSON.stringify(galleryProgress));
-                renderGalleryCarousel();
-
-                if (newQty >= targetGift.max && currentQty < targetGift.max) {
-                    enqueueItem({ type: "alert", image: targetGift.image, name: targetGift.name });
-                }
-            }
-        }
-    }
-}
-
-function conectarWebSocketNativo() {
-    setStatus("🔄 Conectando...");
-
-    ws = new WebSocket("ws://127.0.0.1:8080/");
-
-    ws.onopen = () => {
-        setStatus("🟢 Conectado!");
-        
-        ws.send(JSON.stringify({
-            request: "Subscribe",
-            events: {
-                General: ["Custom"],
-                Raw: ["Action", "SubAction"],
-                TikTok: ["Gift", "Follow"]
-            },
-            id: "overlay_sub_all"
-        }));
-
-        setTimeout(() => {
-            if (CONFIG.showStatus) status.style.display = "none";
-        }, 3000);
-    };
-
-    ws.onmessage = (event) => {
-        try {
-            const raw = JSON.parse(event.data);
-            processarEventoWebSocket(raw);
-        } catch (e) {
-            console.warn("Erro ao ler evento do WebSocket:", e);
-        }
-    };
-
-    ws.onclose = () => {
-        setStatus("🔴 Reconectando...");
-        setTimeout(conectarWebSocketNativo, 3000);
-    };
-
-    ws.onerror = () => {
-        ws.close();
-    };
-}
-
-window.addEventListener("load", () => {
-    renderMemeCarousel();
-    initGalleryStorage();
-    renderGalleryCarousel();
-    conectarWebSocketNativo();
-});
-</script>
-</body>
-</html>
+            alertPop.style.display
