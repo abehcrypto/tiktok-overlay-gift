@@ -410,37 +410,49 @@ function renderMemeCarousel() {
 }
 
 function initGalleryStorage() {
-    const storageKey = "gallery_progress_data";
-    let progressData = {};
+    // Chave v2 para iniciar com o progresso correto sem herdar os valores
+    // que o código antigo estava gravando incorretamente.
+    const storageKey = "gallery_progress_data_v2";
+    const initialProgress = {
+        rosa: 8,
+        maos_fazendo_coracao: 4,
+        rosquinha: 1
+    };
+
+    let savedProgress = {};
 
     try {
-        progressData = JSON.parse(localStorage.getItem(storageKey) || "null") || {};
+        savedProgress = JSON.parse(localStorage.getItem(storageKey) || "null") || {};
     } catch (error) {
         console.warn("Progresso da galeria inválido; recriando dados.", error);
-        progressData = {};
+        savedProgress = {};
     }
 
-    // Rosas resetadas para zero; mantém o restante do progresso da galeria.
-    progressData["rosa"] = 0;
-    progressData["maos_fazendo_coracao"] = 1;
+    const progressData = {};
 
-    // Mantém o progresso dos outros presentes e cria entradas que faltarem.
+    // Usa o progresso salvo quando existir. Na primeira abertura, começa
+    // com 8 Rosas, 4 Mãos fazendo coração, 1 Rosquinha e os demais em zero.
     CONFIG.galleryGifts.forEach(item => {
-        if (item.key === "rosa" || item.key === "maos_fazendo_coracao") return;
-        const value = Number(progressData[item.key] ?? 0);
+        const fallback = initialProgress[item.key] ?? 0;
+        const value = Number(savedProgress[item.key] ?? fallback);
+
         progressData[item.key] = Number.isFinite(value)
             ? Math.min(item.max, Math.max(0, Math.floor(value)))
-            : 0;
+            : fallback;
     });
 
-    localStorage.setItem(storageKey, JSON.stringify(progressData));
+    try {
+        localStorage.setItem(storageKey, JSON.stringify(progressData));
+    } catch (error) {
+        console.warn("Não foi possível salvar o progresso da galeria.", error);
+    }
 }
 
 function renderGalleryCarousel() {
     const track = document.getElementById("gallery-track");
     track.innerHTML = "";
 
-    const galleryProgress = JSON.parse(localStorage.getItem("gallery_progress_data")) || {};
+    const galleryProgress = JSON.parse(localStorage.getItem("gallery_progress_data_v2")) || {};
     const fullGallery = [...CONFIG.galleryGifts, ...CONFIG.galleryGifts];
 
     fullGallery.forEach(item => {
@@ -639,7 +651,7 @@ function processarEventoWebSocket(raw) {
         );
 
         if (targetGift) {
-            const storageKey = "gallery_progress_data";
+            const storageKey = "gallery_progress_data_v2";
             const galleryProgress = JSON.parse(localStorage.getItem(storageKey)) || {};
             const currentQty = galleryProgress[targetGift.key] || 0;
 
